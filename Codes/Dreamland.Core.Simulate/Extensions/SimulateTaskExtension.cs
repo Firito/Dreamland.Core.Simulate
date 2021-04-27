@@ -19,11 +19,26 @@ namespace Dreamland.Core.Simulate.Extensions
         ///     在指定<paramref name="rect"/>区域内获取随机点
         /// </summary>
         /// <param name="rect">随机点区间</param>
+        /// <param name="margin">取得的随机点横坐标要距离区域四边的边距</param>
         /// <returns></returns>
-        public static Point GetRandomPoint(this RECT rect)
+        public static Point GetRandomPoint(this RECT rect, int margin = 0)
         {
-            var x = Random.Next(rect.left, rect.right);
-            var y = Random.Next(rect.top, rect.bottom);
+            return GetRandomPoint(rect, margin, margin, margin, margin);
+        }
+
+        /// <summary>
+        ///     在指定<paramref name="rect"/>区域内获取随机点
+        /// </summary>
+        /// <param name="rect">随机点区间</param>
+        /// <param name="leftMargin">取得的随机点横坐标要距离区域最左侧的边距</param>
+        /// <param name="topMargin">取得的随机点横坐标要距离区域最上方的边距</param>
+        /// <param name="rightMargin">取得的随机点横坐标要距离区域最右侧的边距</param>
+        /// <param name="bottomMargin">取得的随机点横坐标要距离区域最下方的边距</param>
+        /// <returns></returns>
+        public static Point GetRandomPoint(this RECT rect, int leftMargin, int topMargin, int rightMargin, int bottomMargin)
+        {
+            var x = Random.Next(rect.left + leftMargin, rect.right - rightMargin);
+            var y = Random.Next(rect.top + topMargin, rect.bottom - bottomMargin);
             return new Point(x, y);
         }
 
