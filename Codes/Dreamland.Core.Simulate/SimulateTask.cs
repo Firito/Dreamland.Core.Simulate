@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dreamland.Core.Simulate.Interfaces;
 
@@ -29,6 +30,20 @@ namespace Dreamland.Core.Simulate
         /// </summary>
         /// <returns></returns>
         public abstract Task<SimulateResult> RunAsync();
+
+        /// <summary>
+        ///     运行该任务
+        /// </summary>
+        /// <param name="beginAction">开始任务时的委托</param>
+        /// <param name="endAction">结束任务时的委托</param>
+        /// <returns></returns>
+        public async Task<SimulateResult> RunAsync(Action<ISimulateTask> beginAction, Action<ISimulateTask, SimulateResult> endAction)
+        {
+            beginAction?.Invoke(this);
+            var result = await RunAsync();
+            endAction?.Invoke(this, result);
+            return result;
+        }
 
         /// <summary>
         ///     获取最后一次执行失败的信息
