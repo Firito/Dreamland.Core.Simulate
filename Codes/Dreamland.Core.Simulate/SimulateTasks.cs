@@ -36,21 +36,23 @@ namespace Dreamland.Core.Simulate
         /// <summary>
         ///     运行该任务组，执行过程中出现失败则直接结束
         /// </summary>
+        /// <param name="millisecondsDelay">每个任务之间间隔的时间</param>
         /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public Task<SimulateResult> RunAsync(bool useRandomOrder = false)
+        public Task<SimulateResult> RunAsync(uint millisecondsDelay, bool useRandomOrder = false)
         {
-            return RunAsync(null, null, useRandomOrder);
+            return RunAsync(millisecondsDelay, null, null, useRandomOrder);
         }
 
         /// <summary>
         ///     运行该任务
         /// </summary>
+        /// <param name="millisecondsDelay">每个任务之间间隔的时间</param>
         /// <param name="beginAction">开始任务时的委托</param>
         /// <param name="endAction">结束任务时的委托</param>
         /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public async Task<SimulateResult> RunAsync(Action<ISimulateTask> beginAction,
+        public async Task<SimulateResult> RunAsync(uint millisecondsDelay, Action<ISimulateTask> beginAction,
             Action<ISimulateTask, SimulateResult> endAction, bool useRandomOrder = false)
         {
             var sortedTasks = GetSortedSimulateTasks(useRandomOrder);
@@ -60,6 +62,10 @@ namespace Dreamland.Core.Simulate
                 var result = await sortedTasks[i].RunAsync(beginAction, endAction);
                 if (result.Success)
                 {
+                    if (i < taskCount -1 && millisecondsDelay > 0)
+                    {
+                        await Task.Delay((int)millisecondsDelay);
+                    }
                     continue;
                 }
 
@@ -68,7 +74,7 @@ namespace Dreamland.Core.Simulate
                 simulateResult.FailedTasks.Add(sortedTasks[i]);
                 for (var j = i + 1; j < taskCount; j++)
                 {
-                    simulateResult.UnenforcedTasks.Add(sortedTasks[i]);
+                    simulateResult.UnenforcedTasks.Add(sortedTasks[j]);
                 }
                 return simulateResult;
             }
@@ -79,31 +85,39 @@ namespace Dreamland.Core.Simulate
         /// <summary>
         ///     运行该任务组，忽略执行过程中出现的失败直到所有任务执行完毕
         /// </summary>
+        /// <param name="millisecondsDelay">每个任务之间间隔的时间</param>
         /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public Task<SimulateResult> RunIgnoreFailureAsync(bool useRandomOrder = false)
+        public Task<SimulateResult> RunIgnoreFailureAsync(uint millisecondsDelay, bool useRandomOrder = false)
         {
-            return RunIgnoreFailureAsync(null, null, useRandomOrder);
+            return RunIgnoreFailureAsync(millisecondsDelay, null, null, useRandomOrder);
         }
 
         /// <summary>
         ///     运行该任务组，忽略执行过程中出现的失败直到所有任务执行完毕
         /// </summary>
+        /// <param name="millisecondsDelay">每个任务之间间隔的时间</param>
         /// <param name="beginAction">开始任务时的委托</param>
         /// <param name="endAction">结束任务时的委托</param>
         /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public async Task<SimulateResult> RunIgnoreFailureAsync(Action<ISimulateTask> beginAction,
+        public async Task<SimulateResult> RunIgnoreFailureAsync(uint millisecondsDelay, Action<ISimulateTask> beginAction,
             Action<ISimulateTask, SimulateResult> endAction, bool useRandomOrder = false)
         {
             var failedTasks = new List<ISimulateTask>();
             var sortedTasks = GetSortedSimulateTasks(useRandomOrder);
-            foreach (var task in sortedTasks)
+            var taskCount = sortedTasks.Count;
+
+            for (var i = 0; i < taskCount; i++)
             {
-                var result = await task.RunAsync(beginAction, endAction);
+                var result = await sortedTasks[i].RunAsync(beginAction, endAction);
+                if (i < taskCount -1 && millisecondsDelay > 0)
+                {
+                    await Task.Delay((int)millisecondsDelay);
+                }
                 if (!result.Success)
                 {
-                    failedTasks.Add(task);
+                    failedTasks.Add(sortedTasks[i]);
                 }
             }
 
