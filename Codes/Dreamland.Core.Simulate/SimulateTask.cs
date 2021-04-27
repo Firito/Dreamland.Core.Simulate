@@ -17,7 +17,7 @@ namespace Dreamland.Core.Simulate
         /// <summary>
         ///     所属该任务的控件代理
         /// </summary>
-        protected readonly Dictionary<string, ControlProxy> BiControlProxies = new Dictionary<string, ControlProxy>();
+        protected Dictionary<string, ControlProxy> ControlProxies { get; } = new Dictionary<string, ControlProxy>();
 
         /// <summary>
         ///     任务名称
@@ -40,11 +40,11 @@ namespace Dreamland.Core.Simulate
         /// </summary>
         public void Dispose()
         {
-            foreach (var keyValuePair in BiControlProxies)
+            foreach (var keyValuePair in ControlProxies)
             {
                 keyValuePair.Value?.Dispose();
             }
-            BiControlProxies.Clear();
+            ControlProxies.Clear();
         }
     }
 }
