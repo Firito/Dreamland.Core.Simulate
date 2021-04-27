@@ -38,12 +38,26 @@ namespace Dreamland.Core.Simulate
         /// </summary>
         /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public async Task<SimulateResult> RunAsync(bool useRandomOrder = false)
+        public Task<SimulateResult> RunAsync(bool useRandomOrder = false)
         {
-            var taskCount = Tasks.Count;
+            return RunAsync(null, null, useRandomOrder);
+        }
+
+        /// <summary>
+        ///     运行该任务
+        /// </summary>
+        /// <param name="beginAction">开始任务时的委托</param>
+        /// <param name="endAction">结束任务时的委托</param>
+        /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
+        /// <returns></returns>
+        public async Task<SimulateResult> RunAsync(Action<ISimulateTask> beginAction,
+            Action<ISimulateTask, SimulateResult> endAction, bool useRandomOrder = false)
+        {
+            var sortedTasks = GetSortedSimulateTasks(useRandomOrder);
+            var taskCount = sortedTasks.Count;
             for (var i = 0; i < taskCount; i++)
             {
-                var result = await Tasks[i].RunAsync();
+                var result = await sortedTasks[i].RunAsync(beginAction, endAction);
                 if (result.Success)
                 {
                     continue;
@@ -51,10 +65,10 @@ namespace Dreamland.Core.Simulate
 
                 //如果当前任务执行失败，则创建失败结果
                 var simulateResult = new SimulateResult(false);
-                simulateResult.FailedTasks.Add(Tasks[i]);
+                simulateResult.FailedTasks.Add(sortedTasks[i]);
                 for (var j = i + 1; j < taskCount; j++)
                 {
-                    simulateResult.UnenforcedTasks.Add(Tasks[i]);
+                    simulateResult.UnenforcedTasks.Add(sortedTasks[i]);
                 }
                 return simulateResult;
             }
@@ -65,40 +79,58 @@ namespace Dreamland.Core.Simulate
         /// <summary>
         ///     运行该任务组，忽略执行过程中出现的失败直到所有任务执行完毕
         /// </summary>
-        /// <param name="useRandomOrder"></param>
+        /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
         /// <returns></returns>
-        public async Task<SimulateResult> RunIgnoreFailureAsync(bool useRandomOrder = false)
+        public Task<SimulateResult> RunIgnoreFailureAsync(bool useRandomOrder = false)
+        {
+            return RunIgnoreFailureAsync(null, null, useRandomOrder);
+        }
+
+        /// <summary>
+        ///     运行该任务组，忽略执行过程中出现的失败直到所有任务执行完毕
+        /// </summary>
+        /// <param name="beginAction">开始任务时的委托</param>
+        /// <param name="endAction">结束任务时的委托</param>
+        /// <param name="useRandomOrder">是否使用随机顺序运行<see cref="Tasks"/>中的<see cref="ISimulateTask"/></param>
+        /// <returns></returns>
+        public async Task<SimulateResult> RunIgnoreFailureAsync(Action<ISimulateTask> beginAction,
+            Action<ISimulateTask, SimulateResult> endAction, bool useRandomOrder = false)
         {
             var failedTasks = new List<ISimulateTask>();
-
-            if (useRandomOrder)
+            var sortedTasks = GetSortedSimulateTasks(useRandomOrder);
+            foreach (var task in sortedTasks)
             {
-                var indexOrder = this.GetRandomIndex();
-                foreach (var index in indexOrder)
+                var result = await task.RunAsync(beginAction, endAction);
+                if (!result.Success)
                 {
-                    var task = Tasks[index];
-                    var result = await task.RunAsync();
-                    if (!result.Success)
-                    {
-                        failedTasks.Add(task);
-                    }
-                }
-            }
-            else
-            {
-                foreach (var task in Tasks)
-                {
-                    var result = await task.RunAsync();
-                    if (!result.Success)
-                    {
-                        failedTasks.Add(task);
-                    }
+                    failedTasks.Add(task);
                 }
             }
 
             return failedTasks.Any() 
                 ? new SimulateResult(false, failedTasks, null) 
                 : new SimulateResult(true);
+        }
+
+        /// <summary>
+        ///     获取排好执行顺序的任务
+        /// </summary>
+        /// <param name="useRandomOrder"></param>
+        /// <returns></returns>
+        private IList<ISimulateTask> GetSortedSimulateTasks(bool useRandomOrder)
+        {
+            var sortedTasks = new List<ISimulateTask>();
+            if (useRandomOrder)
+            {
+                var indexOrder = this.GetRandomIndex();
+                sortedTasks.AddRange(indexOrder.Select(index => Tasks[index]));
+            }
+            else
+            {
+                sortedTasks.AddRange(Tasks);
+            }
+
+            return sortedTasks;
         }
     }
 }
