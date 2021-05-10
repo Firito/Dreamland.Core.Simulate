@@ -1,0 +1,12 @@
+<Project>
+  <Import Project="Build\Version.props" />
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)bin\$(Configuration)</PackageOutputPath>
+    <Authors>Firito</Authors>
+    <RepositoryUrl>https://github.com/Firito/Dreamland.Core.Simulate</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/Firito/Dreamland.Core.Simulate</PackageProjectUrl>
+    <Description>为Dreamland项目提供基于图像识别的模拟UI自动化测试的支持（预览）</Description>
+  </PropertyGroup>
+</Project>
